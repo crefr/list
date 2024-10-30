@@ -1,11 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 
 #include "logger.h"
 #include "list.h"
 
 static list_status_t printOneElem(list_t * list, int index);
+
+static list_status_t updateFree(list_t * list);
 
 list_status_t listCtor(list_t * list, size_t elem_size, int size)
 {
@@ -14,6 +17,7 @@ list_status_t listCtor(list_t * list, size_t elem_size, int size)
     list->elem_size = elem_size;
 
     list->head = 0;
+    list->free = 1;
 
     list->data = calloc(size, elem_size);
 
@@ -46,6 +50,53 @@ list_status_t listDtor(list_t * list)
     free(list->next);
     list->next = NULL;
 
+    return LIST_SUCCESS;
+}
+
+list_status_t listInsertAfter(list_t * list, int index, void * val)
+{
+    assert(list);
+    assert(val);
+    int next_index = list->next[index];
+
+    list->next[index] = list->free;
+
+    if (index == 0)
+        list->head = list->free;
+    else
+        list->prev[list->free] = index;
+
+    list->next[list->free] = next_index;
+
+    void * free_elem_val = listGetElem(list, list->free);
+    memcpy(free_elem_val, val, list->elem_size);
+    updateFree(list);
+
+    return LIST_SUCCESS;
+}
+
+list_status_t listRemove(list_t * list, int index)
+{
+    assert(list);
+    if (index == 0)
+        return LIST_DELETE_ZERO_ERROR;
+    int prev_index = list->prev[index];
+    int next_index = list->next[index];
+
+    list->next[prev_index] = next_index;
+    list->prev[next_index] = prev_index;
+    return LIST_SUCCESS;
+}
+
+static list_status_t updateFree(list_t * list)
+{
+    int search_index = 1;
+    while (list->next[search_index] != -1){
+        search_index++;
+        if (search_index > list->size)
+            return LIST_NO_FREE_SPACE;
+    }
+    list->free = search_index;
     return LIST_SUCCESS;
 }
 
