@@ -86,11 +86,27 @@ list_status_t listRemove(list_t * list, int index)
     assert(list);
     if (index == 0)
         return LIST_DELETE_ZERO_ERROR;
+    if (index == list->head){
+        listRemoveFirst(list);
+        return LIST_SUCCESS;
+    }
     int prev_index = list->prev[index];
     int next_index = list->next[index];
 
     list->next[prev_index] = next_index;
     list->prev[next_index] = prev_index;
+    return LIST_SUCCESS;
+}
+
+list_status_t listRemoveFirst(list_t * list)
+{
+    assert(list);
+    int index = list->head;
+    int prev_index = list->prev[index];
+    int next_index = list->next[index];
+
+    list->prev[next_index] = prev_index;
+    list->head = next_index;
     return LIST_SUCCESS;
 }
 
