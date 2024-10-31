@@ -14,6 +14,8 @@ typedef struct
     int free;
 
     int head;
+
+    int dump_count;
 } list_t;
 
 typedef enum
@@ -37,5 +39,9 @@ void * listGetElem(list_t * list, int index);
 list_status_t listInsertAfter(list_t * list, int index, void * val);
 
 list_status_t listRemove(list_t * list, int index);
+
+list_status_t listDumpDot(list_t * list, FILE * dot_file);
+
+list_status_t listDump(list_t * list);
 
 #endif

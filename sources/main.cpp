@@ -6,6 +6,12 @@
 
 int main()
 {
+    system("mkdir -p \"logs\"");
+    logStart("logs/log.html", LOG_DEBUG_PLUS, LOG_HTML);
+
+    system("mkdir -p \"logs/dots\"");
+    FILE * dot_file = fopen("logs/dots/graph.dot", "w");
+
     list_t mylist = {};
     listCtor (&mylist, sizeof(int), 16);
     listPrint(&mylist);
@@ -14,23 +20,27 @@ int main()
     int b = 48;
     int c = 36;
     listInsertAfter(&mylist, 0, &a);
-    listPrint(&mylist);
+    listDump(&mylist);
 
     listInsertAfter(&mylist, 1, &b);
-    listPrint(&mylist);
+    listDump(&mylist);
 
     listInsertAfter(&mylist, 1, &c);
-    listPrint(&mylist);
+    listDump(&mylist);
 
     listInsertAfter(&mylist, 1, &c);
-    listPrint(&mylist);
+    listDump(&mylist);
 
     listInsertAfter(&mylist, 1, &c);
+    listDump(&mylist);
+
+    listRemove(&mylist, 2);
     listPrint(&mylist);
 
-    listRemove(&mylist, 4);
-    listPrint(&mylist);
+    listDump(&mylist);
 
     listDtor (&mylist);
+    fclose(dot_file);
+    logExit();
     return 0;
 }

@@ -4,6 +4,12 @@
 /// @brief different levels of logging, IT IS NECESSARY TO WRITE THEM IN ASCENDING ORDER
 enum loglevels{LOG_RELEASE, LOG_DEBUG, LOG_DEBUG_PLUS};
 
+typedef enum
+{
+    LOG_HTML,
+    LOG_TEXT
+} log_mode_t;
+
 #define LOGPRINTWITHTIME(loglevel, ...)          \
         do{                                      \
                 logPrintTime(loglevel);          \
@@ -29,7 +35,7 @@ enum loglevels{LOG_RELEASE, LOG_DEBUG, LOG_DEBUG_PLUS};
                 printf("\n");                    \
         }while(0)
 
-int  logStart(const char * logfile, enum loglevels loglevel);
+int logStart(const char * logfilename, enum loglevels loglevel, log_mode_t mode);
 void logPrint(enum loglevels loglevel, const char * fmt, ...);
 void logPrintTime(enum loglevels loglevel);
 void logExit(void);

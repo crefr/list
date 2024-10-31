@@ -8,15 +8,18 @@
 static enum loglevels LOGlevel = LOG_RELEASE;
 static FILE * LOGfile = NULL;
 
-int logStart(const char * logfilename, enum loglevels loglevel)
+int logStart(const char * logfilename, enum loglevels loglevel, log_mode_t mode)
 {
     LOGlevel = loglevel;
-    LOGfile = fopen(logfilename, "a+");
+    // LOGfile = fopen(logfilename, "a+");
+    LOGfile = fopen(logfilename, "w");
     if (LOGfile == NULL){
-        printf(">>> logger ERROR: cannot open logfile\n");
+        printf("}}} logger ERROR: cannot open logfile\n");
         return 0;
     }
-    logPrint(LOG_RELEASE, "\n<-----------STARTED----------->\n");
+    if (mode == LOG_HTML)
+        logPrint(LOG_RELEASE, "<pre>\n");
+    logPrint(LOG_RELEASE, "\n{-----------STARTED-----------}\n");
     return 1;
 }
 
@@ -48,7 +51,7 @@ void logPrintTime(enum loglevels loglevel)
 
 void logExit()
 {
-    logPrint(LOG_RELEASE, "<-----------ENDING------------>\n");
+    logPrint(LOG_RELEASE, "{-----------ENDING------------}\n");
     fclose(LOGfile);
 }
 

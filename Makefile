@@ -38,8 +38,8 @@ else ifeq ($(BUILD),RELEASE)
 	CFLAGS = $(CFLAGS_RELEASE)
 endif
 
-ALLDEPS = $(HEADDIR)list.h
-OBJECTS = main.o list.o
+ALLDEPS = $(HEADDIR)list.h $(HEADDIR)logger.h
+OBJECTS = main.o list.o logger.o
 OBJECTS_WITH_DIR = $(addprefix $(OBJDIR),$(OBJECTS))
 
 $(FILENAME): $(OBJECTS_WITH_DIR)
