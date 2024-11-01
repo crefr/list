@@ -13,7 +13,7 @@ int main()
     FILE * dot_file = fopen("logs/dots/graph.dot", "w");
 
     list_t mylist = {};
-    listCtor (&mylist, sizeof(int), 16);
+    listCtor (&mylist, sizeof(int), 8);
     listPrint(&mylist);
 
     int a = 52;

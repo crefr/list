@@ -7,6 +7,7 @@
 #include "list.h"
 
 const size_t MAX_FILE_NAME = 100;
+const size_t IMG_SIZE_IN_PERCENTS = 85;
 
 static list_status_t printOneElem(list_t * list, int index);
 
@@ -20,7 +21,6 @@ list_status_t listCtor(list_t * list, size_t elem_size, int size)
     list->size = size;
     list->elem_size = elem_size;
 
-    list->head = 0;
     list->free = 1;
 
     list->data = calloc(size, elem_size);
@@ -67,8 +67,6 @@ list_status_t listInsertAfter(list_t * list, int index, void * val)
 
     list->next[index] = list->free;
 
-    if (index == 0)
-        list->head = list->free;
     list->prev[list->free] = index;
 
     list->next[list->free] = next_index;
@@ -86,10 +84,7 @@ list_status_t listRemove(list_t * list, int index)
     assert(list);
     if (index == 0)
         return LIST_DELETE_ZERO_ERROR;
-    if (index == list->head){
-        listRemoveFirst(list);
-        return LIST_SUCCESS;
-    }
+
     int prev_index = list->prev[index];
     int next_index = list->next[index];
 
@@ -101,12 +96,7 @@ list_status_t listRemove(list_t * list, int index)
 list_status_t listRemoveFirst(list_t * list)
 {
     assert(list);
-    int index = list->head;
-    int prev_index = list->prev[index];
-    int next_index = list->next[index];
-
-    list->prev[next_index] = prev_index;
-    list->head = next_index;
+    listRemove(list, list->next[0]);
     return LIST_SUCCESS;
 }
 
@@ -127,7 +117,7 @@ list_status_t listPrint(list_t * list)
     assert(list);
     printf("\nstarted printing list\n");
 
-    int index = list->head;
+    int index = list->next[0];
     while (index != 0){
         printf("elem #%d: ", index);
         printOneElem(list, index);
@@ -175,26 +165,32 @@ list_status_t listDumpDot(list_t * list, FILE * dot_file)
     fprintf(dot_file, "digraph {\n");
     fprintf(dot_file, "rankdir = LR;\n");
 
-    fprintf(dot_file, "node_0 [shape=record,label=\"element #0 | prev = 0 | next = 0 \"];\n");
+    fprintf(dot_file, "node_0 [shape=Mrecord,label=\"element #0 | prev = %d | next = %d\"];\n",
+            list->prev[0], list->next[0]);
 
-    int index = list->head;
-    while (index != 0){
+    int index = 1;
+    while (index < list->size){
         elemToStr(list, index, elem_str);
-        fprintf(dot_file, "node_%d [shape=record,label=\"element #%d | prev = %d | next = %d | val = 0x %s\"];\n",
+        fprintf(dot_file, "node_%d [shape=Mrecord,label=\"element #%d | prev = %d | next = %d | val = 0x %s\"];\n",
                 index, index, list->prev[index], list->next[index], elem_str);
+        fprintf(dot_file, "node_%d->node_%d;\n", index-1, index);
+        index++;
+    }
+
+    index = list->next[0];
+    int last_index = -1;
+    while (last_index != 0){
+        fprintf(dot_file, "node_%d->node_%d [color=\"#00FF00\",constraint=false];\n", index, list->next[index]);
+        last_index = index;
         index = list->next[index];
     }
 
-    index = list->head;
-    while (index != 0){
-        fprintf(dot_file, "node_%d->node_%d [color=\"#00FF00\"];\n", index, list->next[index]);
-        index = list->next[index];
-    }
-
-    index = list->head;
-    while (index != 0){
-        fprintf(dot_file, "node_%d->node_%d [color=\"#FF0000\"];\n", list->prev[index], index);
-        index = list->next[index];
+    index = list->prev[0];
+    last_index = -1;
+    while (last_index != 0){
+        fprintf(dot_file, "node_%d->node_%d [color=\"#FF0000\",constraint=false];\n", index, list->prev[index]);
+        last_index = index;
+        index = list->prev[index];
     }
     fprintf(dot_file, "}\n");
 
@@ -221,8 +217,8 @@ list_status_t listDump(list_t * list)
 
     char img_file_name_log[MAX_FILE_NAME] = "";
     sprintf(img_file_name_log, "imgs/graph_%d.png", list->dump_count);
-    // logPrint(LOG_DEBUG, "<img src = %s>", img_file_name_log, 50);
-    logPrint(LOG_DEBUG, "<img src = %s width = \"%d%%\">", img_file_name_log, 50);
+    // logPrint(LOG_DEBUG, "<img src = %s>", img_file_name_log);
+    logPrint(LOG_DEBUG, "<img src = %s width = \"%d%%\">", img_file_name_log, IMG_SIZE_IN_PERCENTS);
 
     logPrint(LOG_DEBUG, "\n-------LIST_DUMP_END-------\n");
     logPrint(LOG_DEBUG, "<hr>");

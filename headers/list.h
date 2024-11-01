@@ -13,8 +13,6 @@ typedef struct
     int size;
     int free;
 
-    int head;
-
     int dump_count;
 } list_t;
 
