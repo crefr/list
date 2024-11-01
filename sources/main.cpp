@@ -38,7 +38,7 @@ int main()
     listPrint(&mylist);
 
     listDump(&mylist);
-
+    printf("list verify: %d\n", listVerify(&mylist));
     listDtor (&mylist);
     fclose(dot_file);
     logExit();
