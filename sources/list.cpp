@@ -35,8 +35,6 @@ list_status_t listCtor(list_t * list, size_t elem_size, size_t capacity)
     for (int index = 1; index < capacity + 1; index++)
         list->prev[index] = -1;
 
-    list->dump_count = 0;
-
     return LIST_SUCCESS;
 }
 
@@ -112,6 +110,20 @@ list_status_t listRemoveFirst(list_t * list)
 
 static list_status_t updateFree(list_t * list)
 {
+    // if (list->free == 0){
+    //     list->data = realloc(list->data, (list->capacity * 2) * list->elem_size);
+    //     list->next = (int *)realloc(list->next, (list->capacity * 2 + 1) * list->elem_size);
+    //     list->prev = (int *)realloc(list->prev, (list->capacity * 2 + 1) * list->elem_size);
+    //     for (int index = list->capacity + 1; index < list->capacity * 2; index++){
+    //         list->next[index] = index + 1;
+    //         list->prev[index] = -1;
+    //     }
+    //     list->next[list->capacity * 2] = 0;
+    //     list->prev[list->capacity * 2] = -1;
+    //     list->free = list->capacity;
+    //     list->capacity *= 2;
+    //     return LIST_SUCCESS;
+    // }
     list->free = list->next[list->free];
     return LIST_SUCCESS;
 }
@@ -208,11 +220,12 @@ list_status_t listDump(list_t * list)
 
 list_status_t listDumpGraph(list_t * list)
 {
+    static size_t dump_count = 0;
     char dot_file_name[MAX_FILE_NAME] = "";
     char img_file_name[MAX_FILE_NAME] = "";
 
-    sprintf(dot_file_name, "logs/dots/graph_%d.dot", list->dump_count);
-    sprintf(img_file_name, "logs/imgs/graph_%d.png", list->dump_count);
+    sprintf(dot_file_name, "logs/dots/graph_%d.dot", dump_count);
+    sprintf(img_file_name, "logs/imgs/graph_%d.png", dump_count);
 
     FILE * dot_file = fopen(dot_file_name, "w");
     listMakeDot(list, dot_file);
@@ -223,17 +236,25 @@ list_status_t listDumpGraph(list_t * list)
     system(sys_dot_cmd);
 
     char img_file_name_log[MAX_FILE_NAME] = "";
-    sprintf(img_file_name_log, "imgs/graph_%d.png", list->dump_count);
+    sprintf(img_file_name_log, "imgs/graph_%d.png", dump_count);
     logPrint(LOG_DEBUG, "<img src = %s width = \"%d%%\">", img_file_name_log, IMG_SIZE_IN_PERCENTS);
 
     logPrint(LOG_DEBUG, "<hr>");
 
-    list->dump_count++;
+    dump_count++;
     return LIST_SUCCESS;
 }
 
 list_status_t listMakeDot(list_t * list, FILE * dot_file)
 {
+    const char * free_elem_color_str = "color=\"#969696\",fontcolor=\"#969696\"";
+    const char * occupied_elem_color_str = "color=\"#000000\"";
+
+    const char * main_arrows_color_str = "color=\"#00000000\"";
+    const char * next_arrows_color_str = "color=\"#00FF00\"";
+    const char * prev_arrows_color_str = "color=\"#FF0000\"";
+    const char * free_arrows_color_str = "color=\"#888888\"";
+
     assert(list);
     assert(dot_file);
 
@@ -248,33 +269,33 @@ list_status_t listMakeDot(list_t * list, FILE * dot_file)
     int index = 1;
     while (index < list->capacity + 1){
         elemToStr(list, index, elem_str);
-        const char * color_str = (list->prev[index] == -1) ? ",color=\"#969696\",fontcolor=\"#969696\"" : "";
-        fprintf(dot_file, "node_%d [shape=Mrecord,label=\"element #%d | prev = %d | next = %d | val = 0x %s\"%s];\n",
+        const char * color_str = (list->prev[index] == -1) ? free_elem_color_str : occupied_elem_color_str;
+        fprintf(dot_file, "node_%d [shape=Mrecord,label=\"element #%d | prev = %d | next = %d | val = 0x %s\", %s];\n",
                 index, index, list->prev[index], list->next[index], elem_str, color_str);
-        fprintf(dot_file, "node_%d->node_%d [color=\"#00000000\"];\n", index-1, index);
+        fprintf(dot_file, "node_%d->node_%d [%s];\n", index-1, index, main_arrows_color_str);
         index++;
     }
 
     index = list->next[0];
     int last_index = -1;
     while (last_index != 0){
-        fprintf(dot_file, "node_%d->node_%d [color=\"#00FF00\",constraint=false];\n",
-                index, list->next[index]);
+        fprintf(dot_file, "node_%d->node_%d [%s,constraint=false];\n",
+                index, list->next[index], next_arrows_color_str);
         last_index = index;
         index = list->next[index];
     }
     index = list->prev[0];
     last_index = -1;
     while (last_index != 0){
-        fprintf(dot_file, "node_%d->node_%d [color=\"#FF0000\",constraint=false];\n",
-                index, list->prev[index]);
+        fprintf(dot_file, "node_%d->node_%d [%s,constraint=false];\n",
+                index, list->prev[index], prev_arrows_color_str);
         last_index = index;
         index = list->prev[index];
     }
     index = list->free;
     while (index != 0){
-        fprintf(dot_file, "node_%d->node_%d [color=\"#888888\",constraint=false];\n",
-                index, list->next[index]);
+        fprintf(dot_file, "node_%d->node_%d [%s,constraint=false];\n",
+                index, list->next[index], free_arrows_color_str);
         index = list->next[index];
     }
 
