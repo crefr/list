@@ -37,7 +37,11 @@ list_status_t listCtor(list_t * list, size_t elem_size, size_t capacity)
     list->prev[0] = 0;
     for (list_el_id_t index = 1; index < capacity + 1; index++)
         list->prev[index] = -1;
-    list->free = 1;
+
+    if (list->capacity == 0)
+        list->free = 0;
+    else
+        list->free = 1;
 
     return LIST_SUCCESS;
 }
@@ -66,6 +70,10 @@ list_status_t listInsertAfter(list_t * list, list_el_id_t index, void * val)
     assert(list);
     assert(val);
     logPrint(LOG_DEBUG_PLUS, "entered listInsertAfter\n \tfree = %d, cap = %d\n", list->free, list->capacity);
+
+    if (list->free == 0)
+        updateFree(list);
+
     list_el_id_t next_index = list->next[index];
     list_el_id_t  new_index = list->free;
     updateFree(list);
@@ -117,13 +125,12 @@ list_status_t listRemoveFirst(list_t * list)
 static list_status_t updateFree(list_t * list)
 {
     assert(list);
-    const size_t CAP_MULTIPLIER = 2;
     logPrint(LOG_DEBUG_PLUS, "entering updateFree function\n");
     logPrint(LOG_DEBUG_PLUS, "\tfree = %d\n", list->free);
     list->free = list->next[list->free];
     if (list->free == 0){
         logPrint(LOG_DEBUG_PLUS, "\tneed reallocation\n");
-        size_t new_capacity = (list->capacity > 0) ? list->capacity * CAP_MULTIPLIER : 4;
+        size_t new_capacity = (list->capacity > 0) ? list->capacity * CAP_MULTIPLIER : MIN_CAPACITY;
         list->data = realloc(list->data, new_capacity * list->elem_size);
         list->next = (list_el_id_t *)realloc(list->next, (new_capacity + 1) * sizeof(list_el_id_t));
         list->prev = (list_el_id_t *)realloc(list->prev, (new_capacity + 1) * sizeof(list_el_id_t));

@@ -14,7 +14,8 @@ int main()
     FILE * dot_file = fopen("logs/dots/graph.dot", "w");
 
     list_t mylist = {};
-    listCtor (&mylist, sizeof(int), 2);
+    listCtor (&mylist, sizeof(int), 0);
+
     listPrint(&mylist);
 
     int a = 52;

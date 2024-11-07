@@ -65,5 +65,7 @@ list_status_t listDumpGraph(list_t * list);
 /// @brief makes dump to log file
 list_status_t listDump(list_t * list);
 
+const size_t CAP_MULTIPLIER = 2;
+const size_t MIN_CAPACITY = 1;
 
 #endif
