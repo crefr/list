@@ -9,10 +9,13 @@
 const size_t MAX_FILE_NAME = 100;
 const size_t IMG_SIZE_IN_PERCENTS = 85;
 
-static list_status_t printOneElem(list_t * list, int index);
+/// @brief prints one element of the list to stdout
+static list_status_t printOneElem(list_t * list, list_el_id_t index);
 
-static list_status_t elemToStr(list_t * list, int index, char * str);
+/// @brief writes element as a string to str
+static list_status_t elemToStr(list_t * list, list_el_id_t index, char * str);
 
+/// @brief updates list.free, reallocates memory if needed
 static list_status_t updateFree(list_t * list);
 
 list_status_t listCtor(list_t * list, size_t elem_size, size_t capacity)
@@ -21,19 +24,20 @@ list_status_t listCtor(list_t * list, size_t elem_size, size_t capacity)
     list->capacity = capacity;
     list->size = 0;
     list->elem_size = elem_size;
-    list->free = 1;
+    // list->free = 1;
     list->data = calloc(capacity, elem_size);
 
-    list->next = (int *)calloc(capacity + 1, sizeof(int));
+    list->next = (list_el_id_t *)calloc(capacity + 1, sizeof(list_el_id_t));
     list->next[0] = 0;
-    for (int index = 1; index < capacity; index++)
+    for (list_el_id_t index = 1; index < capacity; index++)
         list->next[index] = index + 1;
     list->next[list->capacity] = 0;
 
-    list->prev = (int *)calloc(capacity + 1, sizeof(int));
+    list->prev = (list_el_id_t *)calloc(capacity + 1, sizeof(list_el_id_t));
     list->prev[0] = 0;
-    for (int index = 1; index < capacity + 1; index++)
+    for (list_el_id_t index = 1; index < capacity + 1; index++)
         list->prev[index] = -1;
+    list->free = 1;
 
     return LIST_SUCCESS;
 }
@@ -57,12 +61,13 @@ list_status_t listDtor(list_t * list)
     return LIST_SUCCESS;
 }
 
-list_status_t listInsertAfter(list_t * list, int index, void * val)
+list_status_t listInsertAfter(list_t * list, list_el_id_t index, void * val)
 {
     assert(list);
     assert(val);
-    int next_index = list->next[index];
-    int new_index = list->free;
+    logPrint(LOG_DEBUG_PLUS, "entered listInsertAfter\n \tfree = %d, cap = %d\n", list->free, list->capacity);
+    list_el_id_t next_index = list->next[index];
+    list_el_id_t  new_index = list->free;
     updateFree(list);
 
     list->next[index] = new_index;
@@ -76,17 +81,18 @@ list_status_t listInsertAfter(list_t * list, int index, void * val)
 
     list->size++;
 
+    logPrint(LOG_DEBUG_PLUS, "exiting listInsertAfter\n");
     return LIST_SUCCESS;
 }
 
-list_status_t listRemove(list_t * list, int index)
+list_status_t listRemove(list_t * list, list_el_id_t index)
 {
     assert(list);
     if (index == 0)
         return LIST_DELETE_ZERO_ERROR;
 
-    int prev_index = list->prev[index];
-    int next_index = list->next[index];
+    list_el_id_t prev_index = list->prev[index];
+    list_el_id_t next_index = list->next[index];
 
     list->next[prev_index] = next_index;
     list->prev[next_index] = prev_index;
@@ -110,21 +116,33 @@ list_status_t listRemoveFirst(list_t * list)
 
 static list_status_t updateFree(list_t * list)
 {
-    // if (list->free == 0){
-    //     list->data = realloc(list->data, (list->capacity * 2) * list->elem_size);
-    //     list->next = (int *)realloc(list->next, (list->capacity * 2 + 1) * list->elem_size);
-    //     list->prev = (int *)realloc(list->prev, (list->capacity * 2 + 1) * list->elem_size);
-    //     for (int index = list->capacity + 1; index < list->capacity * 2; index++){
-    //         list->next[index] = index + 1;
-    //         list->prev[index] = -1;
-    //     }
-    //     list->next[list->capacity * 2] = 0;
-    //     list->prev[list->capacity * 2] = -1;
-    //     list->free = list->capacity;
-    //     list->capacity *= 2;
-    //     return LIST_SUCCESS;
-    // }
+    assert(list);
+    const size_t CAP_MULTIPLIER = 2;
+    logPrint(LOG_DEBUG_PLUS, "entering updateFree function\n");
+    logPrint(LOG_DEBUG_PLUS, "\tfree = %d\n", list->free);
     list->free = list->next[list->free];
+    if (list->free == 0){
+        logPrint(LOG_DEBUG_PLUS, "\tneed reallocation\n");
+        size_t new_capacity = (list->capacity > 0) ? list->capacity * CAP_MULTIPLIER : 4;
+        list->data = realloc(list->data, new_capacity * list->elem_size);
+        list->next = (list_el_id_t *)realloc(list->next, (new_capacity + 1) * sizeof(list_el_id_t));
+        list->prev = (list_el_id_t *)realloc(list->prev, (new_capacity + 1) * sizeof(list_el_id_t));
+        for (list_el_id_t index = list->capacity + 1; index < new_capacity; index++){
+            printf("list govno \n");
+            printf("index: %d\n", index);
+            list->next[index] = index + 1;
+            list->prev[index] = -1;
+        }
+        list->next[new_capacity] = 0;
+        list->prev[new_capacity] = -1;
+        list->free = list->capacity + 1;
+        list->capacity = new_capacity;
+        logPrint(LOG_DEBUG_PLUS, "\treallocated (new free = %d, new cap = %d)\n", list->free, list->capacity);
+        logPrint(LOG_DEBUG_PLUS, "exiting updateFree\n");
+        return LIST_SUCCESS;
+    }
+    logPrint(LOG_DEBUG_PLUS, "\tdidnt realloc, new free = %d\n", list->free);
+    logPrint(LOG_DEBUG_PLUS, "exiting updateFree\n");
     return LIST_SUCCESS;
 }
 
@@ -133,7 +151,7 @@ list_status_t listPrint(list_t * list)
     assert(list);
     printf("\nstarted printing list\n");
 
-    int index = list->next[0];
+    list_el_id_t index = list->next[0];
     while (index != 0){
         printf("elem #%d: ", index);
         printOneElem(list, index);
@@ -144,27 +162,27 @@ list_status_t listPrint(list_t * list)
     return LIST_SUCCESS;
 }
 
-static list_status_t printOneElem(list_t * list, int index)
+static list_status_t printOneElem(list_t * list, list_el_id_t index)
 {
     assert(list);
     void * list_elem = listGetElem(list, index);
     for (size_t byte_index = 0; byte_index < list->elem_size; byte_index++){
-        printf("%02X ", *((char *)list_elem + byte_index));
+        printf("%02X ", *((unsigned char *)list_elem + byte_index));
     }
     return LIST_SUCCESS;
 }
 
-static list_status_t elemToStr(list_t * list, int index, char * str)
+static list_status_t elemToStr(list_t * list, list_el_id_t index, char * str)
 {
     assert(list);
     void * list_elem = listGetElem(list, index);
     for (size_t byte_index = 0; byte_index < list->elem_size; byte_index++){
-        sprintf(str + byte_index * 3, "%02X ", *((char *)list_elem + byte_index));
+        sprintf(str + byte_index * 3, "%02X ", *((unsigned char *)list_elem + byte_index));
     }
     return LIST_SUCCESS;
 }
 
-void * listGetElem(list_t * list, int index)
+void * listGetElem(list_t * list, list_el_id_t index)
 {
     assert(list);
     void * list_elem_ptr = (char *)(list->data) + (index - 1) * list->elem_size;
@@ -175,8 +193,8 @@ list_status_t listVerify(list_t * list)
 {
     assert(list);
 
-    int last_index = -1;
-    int index = list->next[0];
+    list_el_id_t last_index = -1;
+    list_el_id_t index = list->next[0];
     while (last_index != 0){
         if (index != list->prev[list->next[index]])
             return LIST_PREV_NEXT_ERROR;
@@ -266,7 +284,7 @@ list_status_t listMakeDot(list_t * list, FILE * dot_file)
     fprintf(dot_file, "node_0 [shape=Mrecord,label=\"element #0 | prev = %d | next = %d\",color=\"#7229c4\"];\n",
             list->prev[0], list->next[0]);
 
-    int index = 1;
+    list_el_id_t index = 1;
     while (index < list->capacity + 1){
         elemToStr(list, index, elem_str);
         const char * color_str = (list->prev[index] == -1) ? free_elem_color_str : occupied_elem_color_str;
@@ -277,8 +295,13 @@ list_status_t listMakeDot(list_t * list, FILE * dot_file)
     }
 
     index = list->next[0];
-    int last_index = -1;
+    list_el_id_t last_index = -1;
+    size_t rec_count = 0;
     while (last_index != 0){
+        if (rec_count > list->capacity + 1)
+            break;
+        rec_count++;
+
         fprintf(dot_file, "node_%d->node_%d [%s,constraint=false];\n",
                 index, list->next[index], next_arrows_color_str);
         last_index = index;
@@ -286,7 +309,12 @@ list_status_t listMakeDot(list_t * list, FILE * dot_file)
     }
     index = list->prev[0];
     last_index = -1;
+    rec_count = 0;
     while (last_index != 0){
+        if (rec_count > list->capacity + 1)
+            break;
+        rec_count++;
+
         fprintf(dot_file, "node_%d->node_%d [%s,constraint=false];\n",
                 index, list->prev[index], prev_arrows_color_str);
         last_index = index;

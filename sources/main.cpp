@@ -8,12 +8,13 @@ int main()
 {
     system("mkdir -p \"logs\"");
     logStart("logs/log.html", LOG_DEBUG_PLUS, LOG_HTML);
+    logCancelBuffer();
 
     system("mkdir -p \"logs/dots\"");
     FILE * dot_file = fopen("logs/dots/graph.dot", "w");
 
     list_t mylist = {};
-    listCtor (&mylist, sizeof(int), 8);
+    listCtor (&mylist, sizeof(int), 2);
     listPrint(&mylist);
 
     int a = 52;
@@ -21,23 +22,13 @@ int main()
     int c = 36;
     listInsertAfter(&mylist, 0, &a);
     listDump(&mylist);
-
-    listInsertAfter(&mylist, 1, &b);
+    listInsertAfter(&mylist, 0, &a);
+    listDump(&mylist);
+    listInsertAfter(&mylist, 0, &a);
+    listDump(&mylist);
+    listInsertAfter(&mylist, 0, &a);
     listDump(&mylist);
 
-    listInsertAfter(&mylist, 1, &c);
-    listDump(&mylist);
-
-    listInsertAfter(&mylist, 1, &c);
-    listDump(&mylist);
-
-    listInsertAfter(&mylist, 1, &c);
-    listDump(&mylist);
-
-    listRemove(&mylist, 2);
-    listPrint(&mylist);
-
-    listDump(&mylist);
     printf("list verify: %d\n", listVerify(&mylist));
     listDtor (&mylist);
     fclose(dot_file);
