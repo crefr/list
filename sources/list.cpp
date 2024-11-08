@@ -54,6 +54,7 @@ list_status_t listCtor(list_t * list, size_t elem_size, list_el_id_t capacity)
 list_status_t listDtor(list_t * list)
 {
     assert(list);
+    assert(listVerify(list) == LIST_SUCCESS);
     logPrint(LOG_DEBUG_PLUS, "destroying list...\n");
     if (list->data == NULL || list->prev == NULL || list->next == NULL)
         return LIST_DTOR_FREE_NULL;
@@ -74,12 +75,14 @@ list_status_t listDtor(list_t * list)
 list_el_id_t listGetHeadIndex(list_t * list)
 {
     assert(list);
+    assert(listVerify(list) == LIST_SUCCESS);
     return list->next[0];
 }
 
 list_el_id_t listGetTailIndex(list_t * list)
 {
     assert(list);
+    assert(listVerify(list) == LIST_SUCCESS);
     return list->prev[0];
 }
 
@@ -87,6 +90,7 @@ list_status_t listInsertAfter(list_t * list, list_el_id_t index, void * val)
 {
     assert(list);
     assert(val);
+    assert(listVerify(list) == LIST_SUCCESS);
     logPrint(LOG_DEBUG_PLUS, "entered listInsertAfter after %d element\n \tfree = %d, cap = %d\n", index, list->free, list->capacity);
 
     if (list->free == 0){
@@ -117,6 +121,7 @@ list_status_t listInsertBefore(list_t * list, list_el_id_t index, void * val)
 {
     assert(list);
     assert(val);
+    assert(listVerify(list) == LIST_SUCCESS);
     logPrint(LOG_DEBUG_PLUS, "entered listInsertBefore before %d element\n \tfree = %d, cap = %d\n", index, list->free, list->capacity);
 
     if (list->free == 0){
@@ -160,6 +165,7 @@ list_status_t listInsertBack (list_t * list, void * val)
 list_status_t listRemove(list_t * list, list_el_id_t index)
 {
     assert(list);
+    assert(listVerify(list) == LIST_SUCCESS);
     logPrint(LOG_DEBUG_PLUS, "entering listRemove (removing %d element)\n\tcap = %d, size = %d\n", index, list->capacity, list->size);
     if (index == 0)
         return LIST_DELETE_ZERO_ERROR;
@@ -196,6 +202,7 @@ list_status_t listRemoveLast (list_t * list)
 static list_status_t updateFree(list_t * list)
 {
     assert(list);
+    assert(listVerify(list) == LIST_SUCCESS);
     logPrint(LOG_DEBUG_PLUS, "entering updateFree function\n");
     logPrint(LOG_DEBUG_PLUS, "\tfree = %d\n", list->free);
     list->free = list->next[list->free];
@@ -207,6 +214,7 @@ static list_status_t updateFree(list_t * list)
 static list_status_t listRealloc(list_t * list)
 {
     assert(list);
+    assert(listVerify(list) == LIST_SUCCESS);
     logPrint(LOG_DEBUG_PLUS, "started reallocating...\n");
     list_el_id_t new_capacity = (list->capacity > 0) ? list->capacity * CAP_MULTIPLIER : MIN_CAPACITY;
     list->data = realloc(list->data, new_capacity * list->elem_size);
@@ -231,6 +239,7 @@ static list_status_t listRealloc(list_t * list)
 list_status_t listPrint(list_t * list)
 {
     assert(list);
+    assert(listVerify(list) == LIST_SUCCESS);
     printf("\nstarted printing list\n");
 
     list_el_id_t index = list->next[0];
@@ -268,6 +277,7 @@ static list_status_t elemToStr(list_t * list, list_el_id_t index, char * str)
 void * listGetElem(list_t * list, list_el_id_t index)
 {
     assert(list);
+    assert(listVerify(list) == LIST_SUCCESS);
     void * list_elem_ptr = (char *)(list->data) + (index - 1) * list->elem_size;
     return list_elem_ptr;
 }
@@ -275,16 +285,31 @@ void * listGetElem(list_t * list, list_el_id_t index)
 list_status_t listVerify(list_t * list)
 {
     assert(list);
+    if (list->capacity < 0)
+        return LIST_CAPACITY_OUT_ERROR;
+
+    if (list->size > list->capacity)
+        return LIST_OVERFLOW;
+
+    if (list->size < 0)
+        return LIST_SIZE_OUT_ERROR;
+
+    if (list->free < 0 || list->free > list->capacity)
+        return LIST_FREE_OUT_ERROR;
+
+    if (list->elem_size == 0)
+        return LIST_NO_ELEM_SIZE_ERROR;
+
     list_el_id_t last_index = -1;
     list_el_id_t index = list->next[0];
     while (last_index != 0){
+        if (index < 0 || index > list->capacity)
+            return LIST_PREV_NEXT_OUT_ERROR;
         if (index != list->prev[list->next[index]])
             return LIST_PREV_NEXT_ERROR;
         last_index = index;
         index = list->next[index];
     }
-    if (list->size > list->capacity)
-        return LIST_OVERFLOW;
     return LIST_SUCCESS;
 }
 
