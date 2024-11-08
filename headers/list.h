@@ -14,8 +14,8 @@ typedef struct
 
     size_t elem_size;
 
-    size_t capacity;
-    size_t size;
+    list_el_id_t capacity;
+    list_el_id_t size;
     list_el_id_t free;
 } list_t;
 
@@ -34,7 +34,7 @@ typedef enum
 } list_status_t;
 
 /// @brief constructs list
-list_status_t listCtor(list_t * list, size_t elem_size, size_t capacity);
+list_status_t listCtor(list_t * list, size_t elem_size, list_el_id_t capacity);
 
 /// @brief destructs list
 list_status_t listDtor(list_t * list);
@@ -45,14 +45,38 @@ list_status_t listPrint(list_t * list);
 /// @brief get element data pointer by its index
 void * listGetElem(list_t * list, list_el_id_t index);
 
+/*--------------------INDEXES--------------------*/
+/// @brief returns index of head element of the list
+list_el_id_t listGetHeadIndex(list_t * list);
+
+/// @brief returns index of tail element of the list
+list_el_id_t listGetTailIndex(list_t * list);
+/*-----------------------------------------------*/
+
+/*--------------------INSERTS--------------------*/
 /// @brief inserts new list element after element with index
 list_status_t listInsertAfter(list_t * list, list_el_id_t index, void * val);
 
+/// @brief inserts new list element before element with index
+list_status_t listInsertBefore(list_t * list, list_el_id_t index, void * val);
+
+/// @brief inserts head element
+list_status_t listInsertFront(list_t * list, void * val);
+
+/// @brief inserts tail element
+list_status_t listInsertBack (list_t * list, void * val);
+/*-----------------------------------------------*/
+
+/*--------------------REMOVES--------------------*/
 /// @brief removes element from list by its index
 list_status_t listRemove(list_t * list, list_el_id_t index);
 
 /// @brief removes head element from the list
 list_status_t listRemoveFirst(list_t * list);
+
+/// @brief removes tail element from the list
+list_status_t listRemoveLast (list_t * list);
+/*-----------------------------------------------*/
 
 /// @brief checks list for some errors
 list_status_t listVerify(list_t * list);

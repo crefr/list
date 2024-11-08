@@ -6,8 +6,9 @@
 #include "logger.h"
 #include "list.h"
 
-const size_t MAX_FILE_NAME = 100;
-const size_t IMG_SIZE_IN_PERCENTS = 85;
+const size_t MAX_FILE_NAME = 256;
+const int  IMG_WIDTH_IN_PERCENTS = 95;
+const int IMG_HEIGTH_IN_PERCENTS = 40;
 
 /// @brief prints one element of the list to stdout
 static list_status_t printOneElem(list_t * list, list_el_id_t index);
@@ -21,7 +22,7 @@ static list_status_t updateFree(list_t * list);
 /// @brief reallocates list, new capacity = capacity * CAP_MULTIPLIER
 static list_status_t listRealloc(list_t * list);
 
-list_status_t listCtor(list_t * list, size_t elem_size, size_t capacity)
+list_status_t listCtor(list_t * list, size_t elem_size, list_el_id_t capacity)
 {
     assert(list);
     logPrint(LOG_DEBUG_PLUS, "constructing list (elem_size = %zu, cap = %zu)\n", elem_size, capacity);
@@ -70,6 +71,18 @@ list_status_t listDtor(list_t * list)
     return LIST_SUCCESS;
 }
 
+list_el_id_t listGetHeadIndex(list_t * list)
+{
+    assert(list);
+    return list->next[0];
+}
+
+list_el_id_t listGetTailIndex(list_t * list)
+{
+    assert(list);
+    return list->prev[0];
+}
+
 list_status_t listInsertAfter(list_t * list, list_el_id_t index, void * val)
 {
     assert(list);
@@ -77,7 +90,7 @@ list_status_t listInsertAfter(list_t * list, list_el_id_t index, void * val)
     logPrint(LOG_DEBUG_PLUS, "entered listInsertAfter after %d element\n \tfree = %d, cap = %d\n", index, list->free, list->capacity);
 
     if (list->free == 0)
-        updateFree(list);
+        listRealloc(list);
 
     list_el_id_t next_index = list->next[index];
     list_el_id_t  new_index = list->free;
@@ -96,6 +109,48 @@ list_status_t listInsertAfter(list_t * list, list_el_id_t index, void * val)
 
     logPrint(LOG_DEBUG_PLUS, "exiting listInsertAfter\n");
     return LIST_SUCCESS;
+}
+
+list_status_t listInsertBefore(list_t * list, list_el_id_t index, void * val)
+{
+    assert(list);
+    assert(val);
+    logPrint(LOG_DEBUG_PLUS, "entered listInsertBefore before %d element\n \tfree = %d, cap = %d\n", index, list->free, list->capacity);
+
+    if (list->free == 0)
+        listRealloc(list);
+
+    list_el_id_t prev_index = list->prev[index];
+    list_el_id_t  new_index = list->free;
+    updateFree(list);
+
+    list->prev[index] = new_index;
+    list->next[new_index] = index;
+
+    list->prev[new_index] = prev_index;
+    list->next[prev_index] = new_index;
+
+    void * new_elem_val = listGetElem(list, new_index);
+    memcpy(new_elem_val, val, list->elem_size);
+
+    list->size++;
+
+    logPrint(LOG_DEBUG_PLUS, "exiting listInsertBefore\n");
+    return LIST_SUCCESS;
+}
+
+list_status_t listInsertFront(list_t * list, void * val)
+{
+    assert(list);
+    assert(val);
+    return listInsertAfter(list, 0, val);
+}
+
+list_status_t listInsertBack (list_t * list, void * val)
+{
+    assert(list);
+    assert(val);
+    return listInsertBefore(list, 0, val);
 }
 
 list_status_t listRemove(list_t * list, list_el_id_t index)
@@ -128,18 +183,18 @@ list_status_t listRemoveFirst(list_t * list)
     return listRemove(list, list->next[0]);
 }
 
+list_status_t listRemoveLast (list_t * list)
+{
+    assert(list);
+    return listRemove(list, list->prev[0]);
+}
+
 static list_status_t updateFree(list_t * list)
 {
     assert(list);
     logPrint(LOG_DEBUG_PLUS, "entering updateFree function\n");
     logPrint(LOG_DEBUG_PLUS, "\tfree = %d\n", list->free);
     list->free = list->next[list->free];
-    if (list->free == 0){
-        logPrint(LOG_DEBUG_PLUS, "\tneed reallocation\n");
-        listRealloc(list);
-        logPrint(LOG_DEBUG_PLUS, "exiting updateFree\n");
-        return LIST_SUCCESS;
-    }
     logPrint(LOG_DEBUG_PLUS, "\tdidnt realloc, new free = %d\n", list->free);
     logPrint(LOG_DEBUG_PLUS, "exiting updateFree\n");
     return LIST_SUCCESS;
@@ -149,7 +204,7 @@ static list_status_t listRealloc(list_t * list)
 {
     assert(list);
     logPrint(LOG_DEBUG_PLUS, "started reallocating...\n");
-    size_t new_capacity = (list->capacity > 0) ? list->capacity * CAP_MULTIPLIER : MIN_CAPACITY;
+    list_el_id_t new_capacity = (list->capacity > 0) ? list->capacity * CAP_MULTIPLIER : MIN_CAPACITY;
     list->data = realloc(list->data, new_capacity * list->elem_size);
     list->next = (list_el_id_t *)realloc(list->next, (new_capacity + 1) * sizeof(list_el_id_t));
     list->prev = (list_el_id_t *)realloc(list->prev, (new_capacity + 1) * sizeof(list_el_id_t));
@@ -241,15 +296,15 @@ list_status_t listDump(list_t * list)
     logPrint(LOG_DEBUG, "free     = %zu\n", list->free);
 
     logPrint(LOG_DEBUG, "index: ");
-    for (size_t index = 0; index < list->capacity + 1; index++){
+    for (list_el_id_t index = 0; index < list->capacity + 1; index++){
         logPrint(LOG_DEBUG, "%4zu ", index);
     }
     logPrint(LOG_DEBUG, "\nprevs: ");
-    for (size_t index = 0; index < list->capacity + 1; index++){
+    for (list_el_id_t index = 0; index < list->capacity + 1; index++){
         logPrint(LOG_DEBUG, "%4d ", list->prev[index]);
     }
     logPrint(LOG_DEBUG, "\nnexts: ");
-    for (size_t index = 0; index < list->capacity + 1; index++){
+    for (list_el_id_t index = 0; index < list->capacity + 1; index++){
         logPrint(LOG_DEBUG, "%4d ", list->next[index]);
     }
     logPrint(LOG_DEBUG, "\n");
@@ -262,12 +317,9 @@ list_status_t listDump(list_t * list)
 
 list_status_t listDumpGraph(list_t * list)
 {
-    const int  IMG_WIDTH_IN_PERCENTS = 95;
-    const int IMG_HEIGTH_IN_PERCENTS = 40;
-
+    assert(list);
     static size_t dump_count = 0;
 
-    const size_t MAX_FILE_NAME = 256;
     char dot_file_name[MAX_FILE_NAME] = "";
     char img_file_name[MAX_FILE_NAME] = "";
 
@@ -332,7 +384,7 @@ list_status_t listMakeDot(list_t * list, FILE * dot_file)
     list_el_id_t last_index = -1;
     size_t rec_count = 0;
     while (last_index != 0){
-        if (rec_count > list->capacity + 1)
+        if (rec_count > (size_t)list->capacity + 1)
             break;
         rec_count++;
 
@@ -345,7 +397,7 @@ list_status_t listMakeDot(list_t * list, FILE * dot_file)
     last_index = -1;
     rec_count = 0;
     while (last_index != 0){
-        if (rec_count > list->capacity + 1)
+        if (rec_count > (size_t)list->capacity + 1)
             break;
         rec_count++;
 

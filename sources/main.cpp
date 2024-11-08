@@ -21,14 +21,14 @@ int main()
     int a = 52;
     int b = 48;
     int c = 36;
-    listInsertAfter(&mylist, 0, &a);
+    for (int i = 1; i < 4; i++){
+        listInsertAfter(&mylist, 0, &i);
+        listDump(&mylist);
+    }
+    listInsertFront(&mylist, &b);
     listDump(&mylist);
-    listInsertAfter(&mylist, 0, &a);
-    listDump(&mylist);
-    listInsertAfter(&mylist, 0, &a);
-    listDump(&mylist);
-    listInsertAfter(&mylist, 0, &a);
-    listDump(&mylist);
+
+    listPrint(&mylist);
 
     printf("list verify: %d\n", listVerify(&mylist));
     listDtor (&mylist);
