@@ -375,7 +375,7 @@ list_status_t listMakeDot(list_t * list, FILE * dot_file)
 
     fprintf(dot_file, "digraph {\n");
     fprintf(dot_file, "rankdir = LR;\n");
-    //fprintf(dot_file, "splines = ortho;\n");
+    // fprintf(dot_file, "splines = ortho;\n");
 
     fprintf(dot_file, "fontname = \"%s\";\n", font_name);
     fprintf(dot_file, "node [fontname = \"%s\", style=filled, color=\"#000000\", fillcolor=\"#FFFFFF\"];\n", font_name);
