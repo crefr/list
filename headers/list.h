@@ -91,6 +91,6 @@ list_status_t listDumpGraph(list_t * list);
 list_status_t listDump(list_t * list);
 
 const size_t CAP_MULTIPLIER = 2;
-const size_t MIN_CAPACITY = 1;
+const size_t MIN_CAPACITY = 4;
 
 #endif

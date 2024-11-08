@@ -89,8 +89,10 @@ list_status_t listInsertAfter(list_t * list, list_el_id_t index, void * val)
     assert(val);
     logPrint(LOG_DEBUG_PLUS, "entered listInsertAfter after %d element\n \tfree = %d, cap = %d\n", index, list->free, list->capacity);
 
-    if (list->free == 0)
+    if (list->free == 0){
+        logPrint(LOG_DEBUG_PLUS, "need reallocation\n");
         listRealloc(list);
+    }
 
     list_el_id_t next_index = list->next[index];
     list_el_id_t  new_index = list->free;
@@ -117,8 +119,10 @@ list_status_t listInsertBefore(list_t * list, list_el_id_t index, void * val)
     assert(val);
     logPrint(LOG_DEBUG_PLUS, "entered listInsertBefore before %d element\n \tfree = %d, cap = %d\n", index, list->free, list->capacity);
 
-    if (list->free == 0)
+    if (list->free == 0){
+        logPrint(LOG_DEBUG_PLUS, "need reallocation\n");
         listRealloc(list);
+    }
 
     list_el_id_t prev_index = list->prev[index];
     list_el_id_t  new_index = list->free;
@@ -195,7 +199,7 @@ static list_status_t updateFree(list_t * list)
     logPrint(LOG_DEBUG_PLUS, "entering updateFree function\n");
     logPrint(LOG_DEBUG_PLUS, "\tfree = %d\n", list->free);
     list->free = list->next[list->free];
-    logPrint(LOG_DEBUG_PLUS, "\tdidnt realloc, new free = %d\n", list->free);
+    logPrint(LOG_DEBUG_PLUS, "\t\new free = %d\n", list->free);
     logPrint(LOG_DEBUG_PLUS, "exiting updateFree\n");
     return LIST_SUCCESS;
 }
@@ -338,11 +342,9 @@ list_status_t listDumpGraph(list_t * list)
 
     char img_file_name_log[MAX_FILE_NAME] = "";
     sprintf(img_file_name_log, "imgs/graph_%zu.svg", dump_count);
-    logPrint(LOG_DEBUG, "<img src = %s width = \"%d%%\" height = \"%d%%\">",
+    logPrint(LOG_DEBUG, "<img src = %s height = \"%d%%\">",
                         img_file_name_log,
-                        IMG_WIDTH_IN_PERCENTS,
                         IMG_HEIGTH_IN_PERCENTS);
-
     logPrint(LOG_DEBUG, "<hr>");
 
     dump_count++;
@@ -351,13 +353,20 @@ list_status_t listDumpGraph(list_t * list)
 
 list_status_t listMakeDot(list_t * list, FILE * dot_file)
 {
-    const char * free_elem_color_str = "color=\"#969696\",fontcolor=\"#969696\"";
-    const char * occupied_elem_color_str = "color=\"#000000\"";
+    const char * bg_color = "#fbffc9";
+    const char * list_bg_color = "#EEEEFF";
+    const char * font_name = "Courier New";
+
+    const char * free_elem_color_str     = "fillcolor = \"#AAAAAA\", fontcolor=\"#000000\"";
+    const char * occupied_elem_color_str = "fillcolor = \"#CCFFCC\"";
 
     const char * main_arrows_color_str = "color=\"#00000000\"";
     const char * next_arrows_color_str = "color=\"#00FF00\"";
     const char * prev_arrows_color_str = "color=\"#FF0000\"";
     const char * free_arrows_color_str = "color=\"#888888\"";
+
+    const char * free_label_color      = "fillcolor=\"#FFFFAA\"";
+    const char * null_element_color    = "fillcolor=\"#FFA2E8\"";
 
     assert(list);
     assert(dot_file);
@@ -366,17 +375,39 @@ list_status_t listMakeDot(list_t * list, FILE * dot_file)
 
     fprintf(dot_file, "digraph {\n");
     fprintf(dot_file, "rankdir = LR;\n");
+    //fprintf(dot_file, "splines = ortho;\n");
 
-    fprintf(dot_file, "node_0 [shape=Mrecord,label=\"element #0 | prev = %d | next = %d\",color=\"#7229c4\"];\n",
-            list->prev[0], list->next[0]);
+    fprintf(dot_file, "fontname = \"%s\";\n", font_name);
+    fprintf(dot_file, "node [fontname = \"%s\", style=filled, color=\"#000000\", fillcolor=\"#FFFFFF\"];\n", font_name);
+    fprintf(dot_file, "bgcolor  = \"%s\";\n", bg_color);
+
+
+    fprintf(dot_file, "node_0 [shape=Mrecord,label=\"element #0 | prev = %d | next = %d\",%s];\n",
+            list->prev[0], list->next[0], null_element_color);
+
+    fprintf(dot_file, "header_node [shape=Mrecord, label=\"HEADER | cap = %d | size = %d | free = %d | elem_size = %d\"];\n",
+            list->capacity, list->size, list->free, list->elem_size);
+    fprintf(dot_file, "header_node->node_0 [%s];\n", main_arrows_color_str);
 
     list_el_id_t index = 1;
+
+    fprintf(dot_file, "subgraph cluster_main_list {\n");
+    fprintf(dot_file, "style=filled; color = \"%s\";\n", list_bg_color);
+    fprintf(dot_file, "label = \"main list\";\n", list_bg_color);
+    fprintf(dot_file, "fontname = \"%s\";\n", font_name);
+    fprintf(dot_file, "pencolor = \"#000000\";\n");
     while (index < list->capacity + 1){
         elemToStr(list, index, elem_str);
         const char * color_str = (list->prev[index] == -1) ? free_elem_color_str : occupied_elem_color_str;
         fprintf(dot_file, "node_%d [shape=Mrecord,label=\"element #%d | prev = %d | next = %d | val = 0x %s\", %s];\n",
                 index, index, list->prev[index], list->next[index], elem_str, color_str);
-        fprintf(dot_file, "node_%d->node_%d [%s];\n", index-1, index, main_arrows_color_str);
+        index++;
+    }
+    fprintf(dot_file, "}\n");
+
+    index = 0;
+    while (index < list->capacity){
+        fprintf(dot_file, "node_%d->node_%d [%s];\n", index, index + 1, main_arrows_color_str);
         index++;
     }
 
@@ -405,6 +436,13 @@ list_status_t listMakeDot(list_t * list, FILE * dot_file)
                 index, list->prev[index], prev_arrows_color_str);
         last_index = index;
         index = list->prev[index];
+    }
+
+    if (list->free == 0)
+        fprintf(dot_file, "node_free [shape=Mrecord, label=\"free = 0 | no free elems\", %s];\n", free_label_color);
+    else {
+        fprintf(dot_file, "node_free [shape=Mrecord, label=\"free = %d | exists\", %s];\n", list->free, free_label_color);
+        fprintf(dot_file, "node_free->node_%d [weight=0];\n", list->free);
     }
     index = list->free;
     while (index != 0){

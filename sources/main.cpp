@@ -14,15 +14,15 @@ int main()
     FILE * dot_file = fopen("logs/dots/graph.dot", "w");
 
     list_t mylist = {};
-    listCtor (&mylist, sizeof(int), 0);
-
+    listCtor(&mylist, sizeof(int), 0);
+    listDump(&mylist);
     listPrint(&mylist);
 
     int a = 52;
     int b = 48;
     int c = 36;
-    for (int i = 1; i < 4; i++){
-        listInsertAfter(&mylist, 0, &i);
+    for (int i = 1; i < 5; i++){
+        listInsertBack(&mylist, &i);
         listDump(&mylist);
     }
     listInsertFront(&mylist, &b);
